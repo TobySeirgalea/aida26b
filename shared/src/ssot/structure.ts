@@ -16,11 +16,11 @@ function localizeText(text: LocalizedText): string {
 
 export const structure = {
   tables: {
-    parents: {
+    tutors: {
       columns: {
         username: {
           type: 'string',
-          label: { es: 'Usuario de padre/madre/tutor', en: 'Parents/tutor username'},
+          label: { es: 'Usuario de Tutor', en: 'Tutor username'},
           input: 'text',
           editable: false,
           required: true,
@@ -34,21 +34,21 @@ export const structure = {
         } 
       },
       pk: 'username',
-      uiName: { es: 'Padre/Madre/Tutor', en: 'Parent/Tutor' },
-      title: { es: 'Padres/Madres/Tutores', en: 'Parents/Tutors' },
-      addButtonLabel: { es: 'Agregar padre/madre/tutor', en: 'Add parent/tutor' },
+      uiName: { es: 'Tutor', en: 'Tutor' },
+      title: { es: 'Tutores', en: 'Tutors' },
+      addButtonLabel: { es: 'Agregar Tutor', en: 'Add Tutor' },
       permissions: {
         'post':   ['admin'],
         'put':    ['admin'],
         'get':    ['admin'],
         'delete': ['admin']
       }
-    },
-    children: {
+    } as TableStructure,
+    childs: {
       columns: {
-        parents_username: {
+        tutors_username: {
         type: 'string',
-        label: { es: 'Usuario de padre/madre/tutor', en: 'Parents/tutor username'},
+        label: { es: 'Usuario de Tutor', en: 'Tutor username'},
         input: 'text',
         editable: false,
         required: true,
@@ -60,16 +60,16 @@ export const structure = {
           maxLength: 20,
         },
         nullable: false,
-        derivable: {originTable: 'parents', sqlGenerationStatement: 'username'},
+        derivable: {originTable: 'tutors', sqlGenerationStatement: 'entityName.username'},
         foreignKey: {
-            table: 'parents',
+            table: 'tutors',
             valueField: 'username',
-            labelField: 'username'
+            labelField: 'tutors_username'
         } as ForeignKeyDef
       },
-        child_username: {
+        username: {
           type: 'string',
-          label: { es: 'Usuario de hijo/hija', en: "Child's username"},
+          label: { es: 'Usuario de hijo', en: "Child's username"},
           input: 'text',
           editable: false,
           required: true,
@@ -83,21 +83,21 @@ export const structure = {
           nullable: false,
         }
       },
-      pk: 'child_username',
-      uiName: { es: 'Hijo/Hija', en: 'Child' },
-      title: { es: 'Hijos/Hijas', en: 'Children' },
-      addButtonLabel: { es: 'Agregar hijo/hija', en: 'Add child' },
-      referencedTables: ['parents'],
+      pk: 'username',
+      uiName: { es: 'hijo', en: 'Child' },
+      title: { es: 'Hijos', en: 'Children' },
+      addButtonLabel: { es: 'Agregar hijo', en: 'Add child' },
+      referencedTables: ['tutors'],
       permissions: {
         'post':   ['admin', 'parent'],
         'put':    ['admin', 'parent'],
         'get':    ['admin', 'parent'],
         'delete': ['admin', 'parent']
       }
-    },
+    } as TableStructure,
     courses: {
       columns: {
-        course_name: {
+        name: {
           type: 'string',
           label: { es: 'Nombre del curso', en: "Course's name"},
           input: 'text',
@@ -110,9 +110,15 @@ export const structure = {
             minLength: 1,
             maxLength: 100,
           },
-          nullable: false,   
-          },
-        course_status: {
+          nullable: false,
+        derivable: {originTable: 'courses', sqlGenerationStatement: 'entityName.name'},
+        foreignKey: {
+          table: 'courses',
+          valueField: 'name',
+          labelField: 'course_name'
+        } as ForeignKeyDef    
+        },
+        status: {
           type: 'string',
           label: { es: 'Estado del curso', en: "Course's status"},
           input: 'text',
@@ -136,7 +142,7 @@ export const structure = {
           ],
         }
       },
-      pk: 'course_name',
+      pk: 'name',
       uiName: { es: 'Curso', en: 'Course' },
       title: { es: 'Cursos', en: 'Courses' },
       addButtonLabel: { es: 'Agregar curso', en: 'Add course' },
@@ -146,10 +152,10 @@ export const structure = {
         'get':    ['admin'],
         'delete': ['admin']
       }
-    },
-    child_enrollments : {
+    } as TableStructure,
+    childs_enrollments : {
       columns: {
-        course_name: {
+        courses_name: {
           type: 'string',
           label: { es: 'Nombre del curso', en: "Course's name"},
           input: 'text',
@@ -161,14 +167,14 @@ export const structure = {
             maxLength: 20
           },
           nullable: false,
-          derivable: {originTable: 'courses', sqlGenerationStatement: 'entityName.course_name'},
+          derivable: {originTable: 'courses', sqlGenerationStatement: 'entityName.name'},
           foreignKey: {
             table: 'courses',
-            valueField: 'course_name',
+            valueField: 'name',
             labelField: 'course_name'
           } as ForeignKeyDef
         },
-        student_username: {
+        childs_username: {
           type: 'string',
           label: { es: 'Username alumno', en: "Student's username" },
           input: 'text',
@@ -180,30 +186,11 @@ export const structure = {
             maxLength: 20
           },
           nullable: false,
-          derivable: {originTable: 'children', sqlGenerationStatement: 'entityName.child_username'},
+          derivable: {originTable: 'childs', sqlGenerationStatement: 'entityName.username'},
           foreignKey: {
-            table: 'children',
-            valueField: 'child_username',
-            labelField: 'child_username'
-          } as ForeignKeyDef
-        },
-        students_parents_username: {
-          type: 'string',
-          input: 'text',
-          label: { es: 'Username de padre/madre/tutor', en: "Parent's/tutor's username" },
-          readonlyOnEdit: true,
-          validator: {
-            required: true,
-            nullable: false,
-            minLength: 1,
-            maxLength: 20
-          },
-          nullable: false,
-          derivable: {originTable: 'parents', sqlGenerationStatement: 'entityName.username'},
-          foreignKey: {
-            table: 'parents',
+            table: 'childs',
             valueField: 'username',
-            labelField: 'username',
+            labelField: 'username'
           } as ForeignKeyDef
         },
         enrollment_date: {
@@ -246,18 +233,18 @@ export const structure = {
           nullable: true
         },
       },
-      pk: ['course_name', 'student_username', 'students_parents_username', 'enrollment_date'],
+      pk: ['courses_name', 'childs_username', 'enrollment_date'],
       uiName: { es: 'Inscripción', en: 'Enrollment'},
       title: { es: 'Inscripciones', en: 'Enrollments'},
       addButtonLabel: { es: 'Agregar inscripción', en: 'Add enrollment'},
-      referencedTables: ['courses', 'children', 'parents'],
+      referencedTables: ['courses', 'childs'],
       permissions: {
         'post':   ['admin', 'parent'],
         'put':    ['admin', 'parent'],
         'get':    ['admin', 'parent'],
         'delete': ['admin', 'parent']
     }
-  },
+  } as TableStructure,
 },
   menu: {
     theme: {
