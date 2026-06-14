@@ -1,5 +1,6 @@
 import { structure } from "../ssot/structure";
-import type { Role } from "../../../backend/src/auth";
+
+export type Role = 'admin' | 'parent' | 'child';
 
 type Response = {
   success: boolean;

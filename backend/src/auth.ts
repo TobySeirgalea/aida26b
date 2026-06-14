@@ -1,9 +1,8 @@
 import crypto from 'crypto';
 import { promisify } from 'util';
+import { Role } from '../../shared/src/types/types';
 
 const scrypt = promisify(crypto.scrypt);
-
-export type Role = 'admin' | 'parent' | 'child';
 
 export type AuthUser = {
   id: number;
