@@ -8,6 +8,7 @@ import {
   getReferencedRelations,
   tryQuery,
   columnNamesEqualsNumber,
+  getNotDerivableFields,
 } from "../helpers";
 
 import { getPkFields } from "../../../shared/src/utils/utils";
@@ -28,6 +29,22 @@ import {
   validateOnlyPk,
   sendErrorsIfInvalid,
 } from "../validation/validate";
+
+import type {
+  AuthUser 
+} from '../auth'
+
+export async function getJustRelatedRows(
+  req: express.Request,
+  res: express.Response,
+  pool: Pool,
+  user: AuthUser
+) {
+  const tableNameParam = req.params.tableName;
+
+  
+}
+
 
 export async function getHandler(
   req: express.Request,
@@ -261,7 +278,7 @@ function isListRequest(query: express.Request["query"]): boolean {
       key.startsWith("filter_")
   );
 }
-
+/*Asume que se respetan condiciones definidas en  database/initial_schema.sql*/
 function getJoinsStatements(
   queryTable: TableKey,
   referencedRelations: TableKey[]
@@ -277,7 +294,7 @@ function getJoinsStatements(
     const pkFields = getPkFields(tableName);
 
     const pkFieldsEqualityStatements = pkFields.map(
-      (pk) => `${entityName}.${pk} = ${referencedEntityName}.${pk}`
+      (pk) => `${entityName}.${tableName}_${pk} = ${referencedEntityName}.${pk}`
     );
 
     joinsStatement += pkFieldsEqualityStatements.join(" AND ");
@@ -288,9 +305,11 @@ function getJoinsStatements(
 
 function getSelectStatement(tableName: TableKey): string {
   const entityName = getEntityName(tableName);
-  const selectFields = [`${entityName}.*`];
-
   const derivedFields: [string, ColumnDef][] = getDerivableFields(tableName);
+  
+  const notDerivedFields = getNotDerivableFields(tableName); [`${entityName}.*`];
+
+  const selectFields = notDerivedFields.map(fieldsName => `${entityName}.${fieldsName}`);
 
   selectFields.push(
     ...derivedFields.map(([fieldName, column]) => {
