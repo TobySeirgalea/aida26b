@@ -1,4 +1,5 @@
 import { structure } from "../ssot/structure";
+import type { Role } from "../../../backend/src/auth";
 
 type Response = {
   success: boolean;
@@ -65,7 +66,8 @@ type TableStructure = {
   uiName: LocalizedText
   title?: LocalizedText
   addButtonLabel?: LocalizedText
-  referencedTables?: string[]
+  referencedTables?: string[],
+  permissions?: {post: Role[], put: Role[], get: Role[], delete: Role[]}
 }
 
 type InferType<FieldDefs extends Record<string, ColumnDef>> = {
@@ -88,4 +90,6 @@ type RendererProps<K extends TableKey> = {
 
 type RendererFunc = <K extends TableKey>(props: RendererProps<K>) => HTMLElement;
 
-export type {TypeMap, MyTypeNames, ColumnValidator, ColumnDef, TableStructure, InferType, TableKey, TableRecordMap, Response, ForeignKeyDef, Language, LocalizedText, RendererProps, RendererFunc};
+type httpMethod = 'post' | 'put' | 'get' | 'delete';
+
+export type {TypeMap, MyTypeNames, ColumnValidator, ColumnDef, TableStructure, InferType, TableKey, TableRecordMap, Response, ForeignKeyDef, Language, LocalizedText, RendererProps, RendererFunc, httpMethod};

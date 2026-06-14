@@ -54,4 +54,8 @@ function formatTableColumnsForQuery(fieldsNames: string[], from: number = 1): st
   return [tupleContent, tupleWithReplaceParameters];
 }
 
-export { getEntityName, tryQuery, columnNamesEqualsNumber, getNotDerivableFields, getRequiredFields, formatTableColumnsForQuery, getReferencedRelations, getDerivableFields };
+function isKnownTable(tableName: string): tableName is TableKey {
+  return Object.prototype.hasOwnProperty.call(structure.tables, tableName);
+}
+
+export { getEntityName, tryQuery, columnNamesEqualsNumber, getNotDerivableFields, getRequiredFields, formatTableColumnsForQuery, getReferencedRelations, getDerivableFields, isKnownTable };

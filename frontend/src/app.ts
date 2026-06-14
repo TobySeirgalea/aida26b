@@ -1503,7 +1503,7 @@ export function hideAnyForm(): void {
   formContainer.innerHTML = '';
 }
 
-function showUserForm(role: Exclude<Role, 'reader'>): void {
+function showUserForm(role: Exclude<Role, 'child'>): void {
   if (currentUser?.role !== 'admin') {
     setMessage(getLocalizedText(structure.commonText.onlyAdminCanCreateUsers));
     return;

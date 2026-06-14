@@ -5,13 +5,16 @@ import { Pool } from 'pg';
 import dotenv from 'dotenv';
 import path from 'path';
 import fs from 'fs';
-
+import type { Role } from './auth';
 import * as auth from './auth';
-
+import { isKnownTable } from './helpers';
+import { structure } from '../../shared/src/ssot/structure';
 import { getHandler } from './routes/get';
 import { putHandler } from './routes/put';
 import { postHandler } from './routes/post';
 import { deleteHandler } from './routes/delete';
+import { TableKey, httpMethod } from '../../shared/src/types/types';
+
 
 // Load environment variables before reading process.env
 dotenv.config();
@@ -139,10 +142,68 @@ const requireAdmin: RequestHandler = async (req, res, next) => {
   return res.status(403).json({ error: 'Forbidden' });
 };
 
+const requireParent: RequestHandler = async (req, res, next) => {
+  if ((req as AuthedRequest).user?.role === 'parent') {
+    return next();
+  }
+
+  await audit(req, 'permission_denied', 'denied', {
+    path: req.path,
+    method: req.method,
+  });
+
+  return res.status(403).json({ error: 'Forbidden' });
+};
+
+const requireAnAllowedRole: (allowedRoles: Role[]) => RequestHandler = (allowedRoles: Role[]) => async (req, res, next) => {
+  const role = (req as AuthedRequest).user?.role;
+
+  if (role && allowedRoles.includes(role)){
+    return next();
+  }
+  await audit(req, 'permission_denied', 'denied', {
+    path: req.path,
+    method: req.method,
+  });
+
+  return res.status(403).json({ error: 'Forbidden' });
+};
+
+function requirePermissions(action: httpMethod): RequestHandler {
+  return async (req, res, next) => {
+    const role = (req as AuthedRequest).user?.role;
+    const tableName = req.params.tableName;
+
+    if (role && structure.tables[tableName as TableKey].permissions[action].includes(role)){
+      return next();
+    }
+
+    await audit(req, 'permission_denied', 'denied', {
+      path: req.path,
+      method: req.method,
+    });
+
+  return res.status(403).json({ error: 'Forbidden' });
+  }
+} 
+
+const requireValidTable: RequestHandler = async (req, res, next) => {
+  if (isKnownTable(req.params.tableName)) {
+    return next();
+  }
+
+  await audit(req, 'invalid_table', 'denied', {
+    path: req.path,
+    method: req.method,
+  });
+  
+  return res.status(404).json({error: 'Resource not found'});
+};
+
 const requireAcademicWrite: RequestHandler = async (req, res, next) => {
   const role = (req as AuthedRequest).user?.role;
 
-  if (role === 'admin' || role === 'editor') {
+  if (role === 'admin') {
     return next();
   }
 
@@ -315,7 +376,7 @@ app.post(
   '/api/admin/users',
   requireAuth,
   requirePasswordReady,
-  requireAdmin,
+  requireAnAllowedRole(['admin']),
   async (req, res) => {
     try {
       const username =
@@ -366,7 +427,7 @@ app.post(
   '/api/admin/users/:id/reset-password',
   requireAuth,
   requirePasswordReady,
-  requireAdmin,
+  requireAnAllowedRole(['admin']),
   async (req, res) => {
     try {
       const userId = Number(req.params.id);
@@ -509,8 +570,42 @@ app.post(
   '/api/:tableName',
   requireAuth,
   requirePasswordReady,
-  requireAcademicWrite,
+  requireValidTable,
+  requirePermissions('post'),
   async (req, res) => {
+    const role = (req as AuthedRequest).user?.role;
+    const tableName = req.params.tableName;
+    if (tableName === 'children'){
+      if (role === 'parent'){
+        //Show just parents child
+      }
+      else if (role === 'admin'){
+        //Show all childs in system
+      }
+      else if (role === 'child'){
+        // childs cant add new childrens
+      }
+    }
+    else if (tableName === 'parents'){
+      if (role === 'admin'){
+        //
+      }
+      else{
+        //Only admins can add new parents
+      }
+    }
+    else if (tableName === 'courses'){
+      if (role === 'admin'){
+        //
+      }
+      else{
+        //Only admins can add new parents
+      }
+    }
+    
+
+
+
     if (req.params.tableName === 'students') {
       return createStudentWithUser(req, res);
     }

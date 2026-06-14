@@ -4,6 +4,11 @@
 SET client_encoding = 'UTF8';
 
 -- Clean up existing data to avoid conflicts
+DELETE FROM parents;
+DELETE FROM children;
+DELETE FROM courses;
+DELETE FROM child_enrollments;
+
 DELETE FROM enrollments;
 DELETE FROM students;
 DELETE FROM subjects;
