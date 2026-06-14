@@ -20,3 +20,7 @@ CREATE TABLE childs_enrollments (
     status                    VARCHAR(20),
     PRIMARY KEY (courses_name, childs_username, enrollment_date)
 );
+
+-- Condiciones para extender:
+-- Si se quiere añadir una foreign key a una tabla T que referencia a una columna C de otra tabla T', entonces en la tabla T debemos agregar esa columna respetando la siguiente nomenclatura: T'_C
+-- Es decir, que debemos poner el nombre de la tabla a la que hace referencia seguido de '_' y del nombre de la columna de dicha tabla.  
