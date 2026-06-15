@@ -596,7 +596,7 @@ function showSection(section: TableKey, pushState = true): void {
   addRecordBtn.style.display = canWriteAcademic() ? 'inline-block' : 'none';
 
   if (adminActions) {
-    adminActions.hidden = currentUser?.role !== 'admin' || section !== 'students';
+    adminActions.hidden = currentUser?.role !== 'admin';
   }
 
   hideAnyForm();
@@ -1636,7 +1636,7 @@ async function showAnyForm<K extends TableKey>(
 
   fields.forEach((field) => form.appendChild(field));
 
-  if (tableKey === 'students' && !isEdit) {
+  if (!isEdit) {
     appendPasswordField(
       form,
       'students-password',
@@ -1675,7 +1675,7 @@ async function showAnyForm<K extends TableKey>(
 
     const payload = collectFormData(tableKey) as Record<string, unknown>;
 
-    if (tableKey === 'students' && !isEdit) {
+    if (!isEdit) {
       payload.password = (document.getElementById('students-password') as HTMLInputElement).value;
     }
 
@@ -1708,7 +1708,7 @@ async function showAnyForm<K extends TableKey>(
 
       hideAnyForm();
 
-      if (tableKey === 'students' && !isEdit && payload.password) {
+      if (isEdit && payload.password) {
         setMessage(getLocalizedText(structure.commonText.studentAndUserCreated));
       } else {
         showSuccessMessage(responseJson.message ?? '');
