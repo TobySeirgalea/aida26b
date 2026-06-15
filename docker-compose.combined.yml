@@ -2,7 +2,7 @@ services:
   # PostgreSQL Database Service
   database:
     image: postgres:18-alpine
-    container_name: aida26_database
+    container_name: aida26b_database
     environment:
       POSTGRES_USER: ${POSTGRES_SUPERUSER:-aida26_user}
       POSTGRES_PASSWORD: ${POSTGRES_SUPERPASS:-CambiaEsta!}
@@ -12,7 +12,7 @@ services:
     volumes:
       - postgres_data:/var/lib/postgresql
     networks:
-      - aida26_network
+      - aida26b_network
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_SUPERUSER:-aida26_user}"]
       interval: 10s
@@ -24,7 +24,7 @@ services:
     build:
       context: .
       dockerfile: Dockerfile.combined
-    container_name: aida26_app
+    container_name: aida26b_app
     environment:
       NODE_ENV: ${NODE_ENV:-development}
       PORT: ${PORT:-3000}
@@ -42,7 +42,7 @@ services:
       database:
         condition: service_healthy
     networks:
-      - aida26_network
+      - aida26b_network
     volumes:
       - ./backend/src:/app/backend/src
       - ./backend/package.json:/app/backend/package.json
@@ -57,5 +57,5 @@ volumes:
   postgres_data:
 
 networks:
-  aida26_network:
+  aida26b_network:
     driver: bridge

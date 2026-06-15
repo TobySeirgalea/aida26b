@@ -1,6 +1,7 @@
 import crypto from 'crypto';
 import { promisify } from 'util';
 import { Role } from '../../shared/src/types/types';
+import { isRole } from '../../shared/src/utils/utils';
 
 const scrypt = promisify(crypto.scrypt);
 
@@ -16,9 +17,6 @@ export type AuthUser = {
 export const SESSION_COOKIE = 'aida_session';
 export const SESSION_DAYS = 7;
 
-export function isRole(value: unknown): value is Role {
-  return value === 'admin' || value === 'parent' || value === 'child';
-}
 
 export async function hashPassword(password: string, salt = crypto.randomBytes(16).toString('hex')) {
   const key = (await scrypt(password, salt, 64)) as Buffer;

@@ -141,8 +141,8 @@ const requireAdmin: RequestHandler = async (req, res, next) => {
   return res.status(403).json({ error: 'Forbidden' });
 };
 
-const requireParent: RequestHandler = async (req, res, next) => {
-  if ((req as AuthedRequest).user?.role === 'parent') {
+const requireTutor: RequestHandler = async (req, res, next) => {
+  if ((req as AuthedRequest).user?.role === 'tutor') {
     return next();
   }
 
@@ -570,7 +570,7 @@ app.get(
    requirePermissions('get'),
   async (req, res) => {
     const user = (req as AuthedRequest).user;
-    if (user?.role === 'parent'){
+    if (user?.role === 'tutor'){
       req.query.filter_ = structure.tables['tutors'].pk + '=' + user?.username;
     }
     return getHandler(req, res, pool);
@@ -582,10 +582,7 @@ app.post(
   requirePasswordReady,
   requireValidTable,
   requirePermissions('post'),
-  async (req, res) => {
-    const role = (req as AuthedRequest).user?.role;
-    const tableName = req.params.tableName;
-    
+  async (req, res) => {    
     return postHandler(req, res, pool);
   }
 );

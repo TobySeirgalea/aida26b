@@ -13,14 +13,14 @@ import {
   RendererFunc,
   Response as ApiResponse,
 } from '@shared/types/types';
-import { getPkFields } from '@shared/utils/utils';
+import type { Role } from '@shared/types/types';
+import { getPkFields, hasPermissionToHTTPRequest, isRole } from '@shared/utils/utils';
 import { validateField } from '@shared/validation/validate';
 import '../styles/style.css';
 
 const API_BASE = '/api';
 const PAGE_SIZE = 20;
 
-type Role = 'admin' | 'editor' | 'reader';
 
 type AuthUser = {
   id: number;
@@ -516,7 +516,7 @@ function applyStaticLanguageToUI(): void {
   setLocalizedElementText('new-password-label', structure.commonText.newPassword);
   setLocalizedElementText('password-submit-btn', structure.commonText.update);
   setLocalizedElementText('logout-btn', structure.commonText.logout);
-  setLocalizedElementText('add-teacher-btn', structure.commonText.addProfessor);
+  setLocalizedElementText('add-tutor-btn', structure.commonText.addTutor);
   setLocalizedElementText('add-admin-btn', structure.commonText.addAdmin);
 }
 
@@ -611,6 +611,13 @@ window.addEventListener('popstate', () => {
     showSection(activeTableKey, false);
   }
 });
+
+function showActionsForRole(role: Role, section: TableKey){
+  if (isRole(role) && hasPermissionToHTTPRequest(role, section, 'post')){
+    
+    adminActions.appendChild();
+  }
+}
 
 // -----------------------------------------------------------------------------
 // Menu
@@ -1510,8 +1517,8 @@ function showUserForm(role: Exclude<Role, 'child'>): void {
   }
 
   const label =
-    role === 'editor'
-      ? getLocalizedText(structure.commonText.professorRole)
+    role === "tutor"
+      ? getLocalizedText(structure.commonText.tutorRole)
       : getLocalizedText(structure.commonText.adminRole);
 
   formContainer.innerHTML = '';
