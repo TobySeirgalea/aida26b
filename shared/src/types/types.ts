@@ -1,6 +1,6 @@
 import { structure } from "../ssot/structure";
 
-export type Role = 'admin' | 'parent' | 'child';
+export type Role = 'admin' | 'tutor' | 'child';
 
 type Response = {
   success: boolean;
