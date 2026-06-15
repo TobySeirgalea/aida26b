@@ -89,10 +89,10 @@ export const structure = {
       addButtonLabel: { es: 'Agregar hijo', en: 'Add child' },
       referencedTables: ['tutors'],
       permissions: {
-        'post':   ['admin', 'parent'],
-        'put':    ['admin', 'parent'],
-        'get':    ['admin', 'parent'],
-        'delete': ['admin', 'parent']
+        'post':   ['admin', 'tutor'],
+        'put':    ['admin', 'tutor'],
+        'get':    ['admin', 'tutor'],
+        'delete': ['admin', 'tutor']
       }
     } as TableStructure,
     courses: {
@@ -239,10 +239,10 @@ export const structure = {
       addButtonLabel: { es: 'Agregar inscripción', en: 'Add enrollment'},
       referencedTables: ['courses', 'childs'],
       permissions: {
-        'post':   ['admin', 'parent'],
-        'put':    ['admin', 'parent'],
-        'get':    ['admin', 'parent'],
-        'delete': ['admin', 'parent']
+        'post':   ['admin', 'tutor'],
+        'put':    ['admin', 'tutor'],
+        'get':    ['admin', 'tutor'],
+        'delete': ['admin', 'tutor']
     }
   } as TableStructure,
 },
@@ -314,7 +314,7 @@ export const structure = {
     currentPassword: { es: 'Contraseña actual', en: 'Current Password' },
     newPassword: { es: 'Nueva contraseña', en: 'New Password' },
     logout: { es: 'Salir', en: 'Logout' },
-    addProfessor: { es: 'Agregar Profesor', en: 'Add Professor' },
+    addTutor: { es: 'Agregar tutor', en: 'Add tutor' },
     addAdmin: { es: 'Agregar Admin', en: 'Add Admin' },
     added: { es: 'agregado', en: 'added' },
 
@@ -346,7 +346,7 @@ export const structure = {
     initialPassword: { es: 'Contraseña inicial', en: 'Initial Password' },
     usernameLabel: { es: 'Usuario', en: 'Username' },
     emailLabel: { es: 'Email', en: 'Email' },
-    professorRole: { es: 'Profesor', en: 'Professor' },
+    tutorRole: { es: 'Tutor', en: 'Tutor' },
     adminRole: { es: 'Admin', en: 'Admin' },
     addUser: { es: 'Agregar usuario', en: 'Add user' },
 
