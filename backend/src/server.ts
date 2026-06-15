@@ -5,7 +5,6 @@ import { Pool } from 'pg';
 import dotenv from 'dotenv';
 import path from 'path';
 import fs from 'fs';
-import type { Role } from './auth';
 import * as auth from './auth';
 import { isKnownTable } from './helpers';
 import { structure } from '../../shared/src/ssot/structure';
@@ -13,7 +12,7 @@ import { getHandler } from './routes/get';
 import { putHandler } from './routes/put';
 import { postHandler } from './routes/post';
 import { deleteHandler } from './routes/delete';
-import { TableKey, httpMethod } from '../../shared/src/types/types';
+import { TableKey, httpMethod, Role } from '../../shared/src/types/types';
 
 
 // Load environment variables before reading process.env
@@ -173,8 +172,9 @@ function requirePermissions(action: httpMethod): RequestHandler {
   return async (req, res, next) => {
     const role = (req as AuthedRequest).user?.role;
     const tableName = req.params.tableName;
+    const permissions = structure.tables[tableName as TableKey].permissions;
 
-    if (role && structure.tables[tableName as TableKey].permissions[action].includes(role)){
+    if (role && permissions && permissions[action].includes(role)){
       return next();
     }
 
@@ -562,8 +562,18 @@ async function createStudentWithUser(req: Request, res: express.Response) {
 }
 
 // Generic academic API routes
-app.get('/api/:tableName', requireAuth, requirePasswordReady, async (req, res) => {
-  return getHandler(req, res, pool);
+app.get(
+  '/api/:tableName',
+   requireAuth,
+   requirePasswordReady,
+   requireValidTable,
+   requirePermissions('get'),
+  async (req, res) => {
+    const user = (req as AuthedRequest).user;
+    if (user?.role === 'parent'){
+      req.query.filter_ = structure.tables['tutors'].pk + '=' + user?.username;
+    }
+    return getHandler(req, res, pool);
 });
 
 app.post(
@@ -575,41 +585,7 @@ app.post(
   async (req, res) => {
     const role = (req as AuthedRequest).user?.role;
     const tableName = req.params.tableName;
-    if (tableName === 'children'){
-      if (role === 'parent'){
-        //Show just parents child
-      }
-      else if (role === 'admin'){
-        //Show all childs in system
-      }
-      else if (role === 'child'){
-        // childs cant add new childrens
-      }
-    }
-    else if (tableName === 'parents'){
-      if (role === 'admin'){
-        //
-      }
-      else{
-        //Only admins can add new parents
-      }
-    }
-    else if (tableName === 'courses'){
-      if (role === 'admin'){
-        //
-      }
-      else{
-        //Only admins can add new parents
-      }
-    }
     
-
-
-
-    if (req.params.tableName === 'students') {
-      return createStudentWithUser(req, res);
-    }
-
     return postHandler(req, res, pool);
   }
 );
@@ -618,7 +594,8 @@ app.put(
   '/api/:tableName',
   requireAuth,
   requirePasswordReady,
-  requireAcademicWrite,
+  requireValidTable,
+  requirePermissions('put'),
   async (req, res) => {
     return putHandler(req, res, pool);
   }
@@ -628,7 +605,8 @@ app.delete(
   '/api/:tableName',
   requireAuth,
   requirePasswordReady,
-  requireAcademicWrite,
+  requireValidTable,
+  requirePermissions('delete'),
   async (req, res) => {
     return deleteHandler(req, res, pool);
   }
