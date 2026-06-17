@@ -110,13 +110,7 @@ export const structure = {
             minLength: 1,
             maxLength: 100,
           },
-          nullable: false,
-        derivable: {originTable: 'courses', sqlGenerationStatement: 'entityName.name'},
-        foreignKey: {
-          table: 'courses',
-          valueField: 'name',
-          labelField: 'course_name'
-        } as ForeignKeyDef    
+          nullable: false
         },
         status: {
           type: 'string',

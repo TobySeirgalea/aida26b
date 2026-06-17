@@ -493,13 +493,13 @@ async function createRowWithUser(req: Request, res: express.Response, tableName:
 
     const { passwordHash, passwordSalt } = await auth.hashPassword(password);
     const [tupleContent, tupleWithParameters] = formatTableColumnsForQuery(Object.keys(req.body).filter((key) => key != 'password'), 1);
-    console.log(tupleContent, tupleWithParameters, Object.values(user_data));
+    console.log(tupleContent, tupleWithParameters, (user_data.map(([fieldName, fieldValue]) => fieldValue)));
     const insertQueryResult = await client.query(
       `INSERT INTO ${tableName}
        ${tupleContent}
        VALUES ${tupleWithParameters}
        RETURNING *`,
-       user_data.map((fieldName, fieldValue) => fieldValue)
+       user_data.map(([fieldName, fieldValue]) => fieldValue)
     );
 
     await client.query(

@@ -1625,7 +1625,7 @@ async function showAnyForm<K extends TableKey>(
 
   const fields = await Promise.all(
     Object.entries(tableConfig.columns)
-      .filter(([fieldName, column]) => !column.derivable)
+    //  .filter(([fieldName, column]) => !column.derivable)
       .map(([fieldName, column]) =>
         renderFormField(
           tableKey,
