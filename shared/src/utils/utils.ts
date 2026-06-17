@@ -6,6 +6,10 @@ export function getPkFields(tableKey: TableKey): string[] {
   return Array.isArray(tableConfig.pk) ? tableConfig.pk : [tableConfig.pk];
 }
 
+export function isUsersTable(tableName: string): boolean{
+  return  tableName === 'childs' ||  tableName === 'tutors'; 
+}
+
 export function isRole(value: unknown): value is Role {
   return value === 'admin' || value === 'tutor' || value === 'child';
 }

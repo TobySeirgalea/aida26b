@@ -160,6 +160,7 @@ export const structure = {
           label: { es: 'Nombre del curso', en: "Course's name"},
           input: 'text',
           readonlyOnEdit: true,
+          editable: true,
           validator: {
             required: true,
             nullable: false,
@@ -197,6 +198,7 @@ export const structure = {
           type: 'string',
           label: { es: 'Fecha de Inscripción', en: 'Enrollment Date' },
           input: 'date',
+          editable: true,
           validator: {
             required: true,
             minDate: '1821-08-09',
@@ -207,6 +209,7 @@ export const structure = {
           type: 'string',
           label: { es: 'Estado', en: 'Status' },
           input: 'select',
+          editable: true,
           validator: {
             nullable: true,
             maxLength: 20,
@@ -225,6 +228,7 @@ export const structure = {
           type: 'number',
           label: { es: 'Nota', en: 'Grade' },
           input: 'number',
+          editable: true,
           validator: {
             nullable: true,
             minValue: 0,

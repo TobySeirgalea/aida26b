@@ -6,14 +6,14 @@ import dotenv from 'dotenv';
 import path from 'path';
 import fs from 'fs';
 import * as auth from './auth';
-import { isKnownTable } from './helpers';
+import { formatTableColumnsForQuery, getEntityName, isKnownTable } from './helpers';
 import { structure } from '../../shared/src/ssot/structure';
 import { getHandler } from './routes/get';
 import { putHandler } from './routes/put';
 import { postHandler } from './routes/post';
 import { deleteHandler } from './routes/delete';
 import { TableKey, httpMethod, Role } from '../../shared/src/types/types';
-
+import { isRole, isUsersTable } from '../../shared/src/utils/utils';
 
 // Load environment variables before reading process.env
 dotenv.config();
@@ -116,6 +116,7 @@ const requireAuth: RequestHandler = async (req, res, next) => {
     (req as AuthedRequest).user = user;
     next();
   } catch (error) {
+    console.log((req as AuthedRequest).user);
     next(error);
   }
 };
@@ -390,7 +391,7 @@ app.post(
       const password = readPassword(req.body.password);
       const role = req.body.role;
 
-      if (!username || !password || !auth.isRole(role)) {
+      if (!username || !password || !isRole(role)) {
         return res.status(400).json({
           error: 'Valid username, password and role are required',
         });
@@ -474,22 +475,16 @@ app.post(
  * If a student is created with `password` in the body, also create its auth user.
  * Without `password`, the request falls back to the generic postHandler below.
  */
-async function createStudentWithUser(req: Request, res: express.Response) {
+async function createRowWithUser(req: Request, res: express.Response, tableName: TableKey) {
   const password = readPassword(req.body.password);
 
-  if (!password) {
+  if (!password && !isUsersTable(tableName)) {
     return postHandler(req, res, pool);
   }
 
-  const {
-    numero_libreta,
-    dni,
-    first_name,
-    last_name,
-    email,
-    enrollment_date,
-    status,
-  } = req.body;
+  const user_data = Object.entries(req.body).filter(([key, ]) => key != 'password');
+
+  console.log(req.body);
 
   const client = await pool.connect();
 
@@ -497,21 +492,14 @@ async function createStudentWithUser(req: Request, res: express.Response) {
     await client.query('BEGIN');
 
     const { passwordHash, passwordSalt } = await auth.hashPassword(password);
-
-    const studentResult = await client.query(
-      `INSERT INTO students
-       (numero_libreta, dni, first_name, last_name, email, enrollment_date, status)
-       VALUES ($1, $2, $3, $4, $5, $6, $7)
+    const [tupleContent, tupleWithParameters] = formatTableColumnsForQuery(Object.keys(req.body).filter((key) => key != 'password'), 1);
+    console.log(tupleContent, tupleWithParameters, Object.values(user_data));
+    const insertQueryResult = await client.query(
+      `INSERT INTO ${tableName}
+       ${tupleContent}
+       VALUES ${tupleWithParameters}
        RETURNING *`,
-      [
-        numero_libreta,
-        dni,
-        first_name,
-        last_name,
-        email,
-        enrollment_date,
-        status,
-      ]
+       user_data.map((fieldName, fieldValue) => fieldValue)
     );
 
     await client.query(
@@ -522,23 +510,22 @@ async function createStudentWithUser(req: Request, res: express.Response) {
          password_hash,
          password_salt,
          role,
-         must_change_password,
-         student_numero_libreta
-       )
-       VALUES ($1, $2, $3, $4, 'reader', true, $1)`,
-      [numero_libreta, email || null, passwordHash, passwordSalt]
+         must_change_password
+        )
+       VALUES ($1, $2, $3, $4, $5, true)`,
+      [req.body.username, req.body.email || null, passwordHash, passwordSalt, (tableName === 'tutors' ? 'tutor' : 'child')]
     );
 
     await client.query('COMMIT');
 
-    await audit(req, 'student_user_created', 'success', {
-      username: numero_libreta,
+    await audit(req, `${tableName}_user_created`, 'success', {
+      username: Object.values(user_data)[0],
     });
 
     return res.status(201).json({
       success: true,
-      message: 'Student created successfully',
-      data: studentResult.rows[0],
+      message: `${getEntityName(tableName)} created successfully`,
+      data: insertQueryResult.rows[0],
     });
   } catch (error) {
     await client.query('ROLLBACK');
@@ -546,11 +533,11 @@ async function createStudentWithUser(req: Request, res: express.Response) {
     if (isUniqueViolation(error)) {
       return res.status(409).json({
         success: false,
-        error: 'Student or username already exists',
+        error: `${getEntityName(tableName)} or username already exists`,
       });
     }
 
-    console.error('Error creating student:', error);
+    console.error(`Error creating ${getEntityName(tableName)}:`, error);
 
     return res.status(500).json({
       success: false,
@@ -582,8 +569,9 @@ app.post(
   requirePasswordReady,
   requireValidTable,
   requirePermissions('post'),
-  async (req, res) => {    
-    return postHandler(req, res, pool);
+  async (req, res) => {
+    const tableName = req.params.tableName;
+    return createRowWithUser(req, res, tableName as TableKey);
   }
 );
 

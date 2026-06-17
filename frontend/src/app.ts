@@ -13,8 +13,8 @@ import {
   RendererFunc,
   Response as ApiResponse,
 } from '@shared/types/types';
-import type { Role } from '@shared/types/types';
-import { getPkFields, hasPermissionToHTTPRequest, isRole } from '@shared/utils/utils';
+import type { httpMethod, Role } from '@shared/types/types';
+import { getPkFields, hasPermissionToHTTPRequest, isRole, isUsersTable } from '@shared/utils/utils';
 import { validateField } from '@shared/validation/validate';
 import '../styles/style.css';
 
@@ -79,7 +79,7 @@ const statusMessage = document.getElementById('status-message') as HTMLElement;
 const viewTitle = document.getElementById('view-title') as HTMLElement;
 const addRecordBtn = document.getElementById('add-record-btn') as HTMLButtonElement;
 const adminActions = document.getElementById('admin-actions') as HTMLElement;
-const addTeacherBtn = document.getElementById('add-teacher-btn') as HTMLButtonElement;
+const addTutorBtn = document.getElementById('add-tutor-btn') as HTMLButtonElement;
 const addAdminBtn = document.getElementById('add-admin-btn') as HTMLButtonElement;
 
 const formContainer = document.getElementById('record-form') as HTMLElement;
@@ -97,8 +97,20 @@ const tableNavButtons = {} as Record<TableKey, HTMLButtonElement>;
 
 let currentUser: AuthUser | null = null;
 
-function canWriteAcademic(): boolean {
-  return currentUser?.role === 'admin' || currentUser?.role === 'editor';
+function isAllowedToDeleteAt(section: TableKey): boolean {
+  return currentUserIsAllowedTo(section, 'delete');
+}
+
+function isAllowedToPostAt(section: TableKey): boolean {
+  return currentUserIsAllowedTo(section, 'post');
+}
+
+function isAllowedToPutAt(section: TableKey): boolean {
+  return currentUserIsAllowedTo(section, 'put');
+}
+
+function currentUserIsAllowedTo(table: TableKey, aMethod: httpMethod): boolean {
+  return (currentUser?.role) ? hasPermissionToHTTPRequest(currentUser.role, table, aMethod) : false;
 }
 
 function setMessage(message = ''): void {
@@ -593,7 +605,7 @@ function showSection(section: TableKey, pushState = true): void {
     getLocalizedText(tableConfig.addButtonLabel) ||
     `${getLocalizedText(structure.commonText.add)} ${getLocalizedText(tableConfig.uiName)}`;
 
-  addRecordBtn.style.display = canWriteAcademic() ? 'inline-block' : 'none';
+  addRecordBtn.style.display = isAllowedToPostAt(section) ? 'inline-block' : 'none';
 
   if (adminActions) {
     adminActions.hidden = currentUser?.role !== 'admin';
@@ -611,13 +623,6 @@ window.addEventListener('popstate', () => {
     showSection(activeTableKey, false);
   }
 });
-
-function showActionsForRole(role: Role, section: TableKey){
-  if (isRole(role) && hasPermissionToHTTPRequest(role, section, 'post')){
-    
-    adminActions.appendChild();
-  }
-}
 
 // -----------------------------------------------------------------------------
 // Menu
@@ -722,7 +727,8 @@ function renderAnyTable<K extends TableKey>(
   const thead = sharedTable.querySelector('thead')!;
   const tbody = sharedTable.querySelector('tbody')!;
   const tableStructure = structure.tables[tableKey];
-  const showActions = canWriteAcademic();
+  const canEdit   = isAllowedToPutAt(tableKey);
+  const canDelete = isAllowedToDeleteAt(tableKey);
 
   thead.innerHTML = '';
   tbody.innerHTML = '';
@@ -756,7 +762,7 @@ function renderAnyTable<K extends TableKey>(
     headerRow.appendChild(th);
   });
 
-  if (showActions) {
+  if (canEdit || canDelete) {
     const actionsHeader = document.createElement('th');
     actionsHeader.textContent = getLocalizedText(structure.commonText.actions);
     headerRow.appendChild(actionsHeader);
@@ -773,6 +779,9 @@ function renderAnyTable<K extends TableKey>(
     const columnNames = Object.keys(tableStructure.columns) as Array<
       keyof TableRecordMap[K] & string
     >;
+    const pkValues = pkFields.map((field) =>
+      String(record[field as keyof TableRecordMap[K]] ?? '')
+    );
 
     columnNames.forEach((name) => {
       const td = document.createElement('td');
@@ -780,38 +789,38 @@ function renderAnyTable<K extends TableKey>(
       row.appendChild(td);
     });
 
-    if (showActions) {
+    if (canEdit || canDelete) {
       const actionsTd = document.createElement('td');
       actionsTd.className = 'actions';
+      
+      if (canEdit){
+        const editBtn = document.createElement('button');
+        editBtn.className = 'edit-btn';
+        editBtn.textContent = getLocalizedText(structure.commonText.edit);
+        editBtn.dataset.pk = JSON.stringify(pkValues);
+        editBtn.addEventListener('click', (event) => {
+          const values = JSON.parse(
+            (event.currentTarget as HTMLElement).dataset.pk || '[]'
+          );
+          window.editRecord(tableKey, ...values);
+        });
+        actionsTd.appendChild(editBtn);
+      }
 
-      const pkValues = pkFields.map((field) =>
-        String(record[field as keyof TableRecordMap[K]] ?? '')
-      );
+      if (canDelete){
+        const deleteBtn = document.createElement('button');
+        deleteBtn.className = 'delete-btn';
+        deleteBtn.textContent = getLocalizedText(structure.commonText.delete);
+        deleteBtn.dataset.pk = JSON.stringify(pkValues);
+        deleteBtn.addEventListener('click', (event) => {
+          const values = JSON.parse(
+            (event.currentTarget as HTMLElement).dataset.pk || '[]'
+          );
+          window.deleteRecord(tableKey, ...values);
+        });
+        actionsTd.appendChild(deleteBtn);
+      }
 
-      const editBtn = document.createElement('button');
-      editBtn.className = 'edit-btn';
-      editBtn.textContent = getLocalizedText(structure.commonText.edit);
-      editBtn.dataset.pk = JSON.stringify(pkValues);
-      editBtn.addEventListener('click', (event) => {
-        const values = JSON.parse(
-          (event.currentTarget as HTMLElement).dataset.pk || '[]'
-        );
-        window.editRecord(tableKey, ...values);
-      });
-
-      const deleteBtn = document.createElement('button');
-      deleteBtn.className = 'delete-btn';
-      deleteBtn.textContent = getLocalizedText(structure.commonText.delete);
-      deleteBtn.dataset.pk = JSON.stringify(pkValues);
-      deleteBtn.addEventListener('click', (event) => {
-        const values = JSON.parse(
-          (event.currentTarget as HTMLElement).dataset.pk || '[]'
-        );
-        window.deleteRecord(tableKey, ...values);
-      });
-
-      actionsTd.appendChild(editBtn);
-      actionsTd.appendChild(deleteBtn);
       row.appendChild(actionsTd);
     }
 
@@ -1203,7 +1212,6 @@ function renderFilters<K extends TableKey>(tableKey: K): void {
 // Form logic
 // -----------------------------------------------------------------------------
 
-addRecordBtn.addEventListener('click', () => showAnyForm(activeTableKey));
 
 function getFieldElementId(tableKey: TableKey, fieldName: string): string {
   return `${tableKey}-${fieldName}`;
@@ -1483,7 +1491,7 @@ function collectFormData<K extends TableKey>(
   const payload: Partial<TableRecordMap[K]> = {};
 
   Object.entries(tableConfig.columns)
-    .filter(([, column]) => column.editable !== false)
+//    .filter(([, column]) => column.editable !== false)
     .forEach(([fieldName, column]) => {
       const id = getFieldElementId(tableKey, fieldName);
       const element = document.getElementById(id) as
@@ -1510,8 +1518,8 @@ export function hideAnyForm(): void {
   formContainer.innerHTML = '';
 }
 
-function showUserForm(role: Exclude<Role, 'child'>): void {
-  if (currentUser?.role !== 'admin') {
+function showUserForm(role: Role): void {
+  if (currentUser?.role !== 'admin' && currentUser?.role !== 'tutor') {
     setMessage(getLocalizedText(structure.commonText.onlyAdminCanCreateUsers));
     return;
   }
@@ -1574,7 +1582,7 @@ function showUserForm(role: Exclude<Role, 'child'>): void {
     const password = (document.getElementById('user-password') as HTMLInputElement).value;
 
     try {
-      const response = await apiFetch('/admin/users', {
+      let response = await apiFetch(`/${activeTableKey}`, {
         method: 'POST',
         body: JSON.stringify({ username, email, password, role }),
       });
@@ -1585,6 +1593,7 @@ function showUserForm(role: Exclude<Role, 'child'>): void {
 
       hideAnyForm();
       setMessage(`${label} ${getLocalizedText(structure.commonText.added)}`);
+      
     } catch (error) {
       const message = (error as Error).message;
 
@@ -1603,7 +1612,7 @@ async function showAnyForm<K extends TableKey>(
   tableKey: K,
   record?: Partial<TableRecordMap[K]>
 ): Promise<void> {
-  if (!canWriteAcademic()) {
+  if (!isAllowedToPutAt(tableKey)) {
     setMessage(getLocalizedText(structure.commonText.noEditPermission));
     return;
   }
@@ -1616,7 +1625,7 @@ async function showAnyForm<K extends TableKey>(
 
   const fields = await Promise.all(
     Object.entries(tableConfig.columns)
-      .filter(([, column]) => column.editable !== false)
+      .filter(([fieldName, column]) => !column.derivable)
       .map(([fieldName, column]) =>
         renderFormField(
           tableKey,
@@ -1643,10 +1652,10 @@ async function showAnyForm<K extends TableKey>(
 
   fields.forEach((field) => form.appendChild(field));
 
-  if (!isEdit) {
+  if (!isEdit && (tableKey === 'tutors' || tableKey === 'childs')) {
     appendPasswordField(
       form,
-      'students-password',
+      `${tableKey}-password`,
       getLocalizedText(structure.commonText.initialPassword)
     );
   }
@@ -1683,7 +1692,7 @@ async function showAnyForm<K extends TableKey>(
     const payload = collectFormData(tableKey) as Record<string, unknown>;
 
     if (!isEdit) {
-      payload.password = (document.getElementById('students-password') as HTMLInputElement).value;
+      payload.password = (document.getElementById(`${tableKey}-password`) as HTMLInputElement).value;
     }
 
     const pkAndTheirValues = getPkFields(tableKey).map((pkFieldName) => {
@@ -1849,7 +1858,7 @@ document.body.setAttribute('data-theme', initialTheme);
 
 applyStaticLanguageToUI();
 
-addTeacherBtn.addEventListener('click', () => showUserForm('editor'));
+addRecordBtn.addEventListener('click', () => showAnyForm(activeTableKey));
 addAdminBtn.addEventListener('click', () => showUserForm('admin'));
 
 loginForm.addEventListener('submit', async (event) => {
